@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b10">
+  <meta name="description" content="Prezzi aggiornati in euro di Bitcoin, Ethereum, Solana e Cardano.">
+  <title>Crypto Pulse — Mercato in tempo reale</title>
+  <link rel="preconnect" href="https://api.coingecko.com">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090b10;
+      --panel: #11141b;
+      --panel-raised: #151922;
+      --line: #222630;
+      --text: #f3f4f6;
+      --muted: #858b99;
+      --green: #42d69a;
+      --red: #ff6b78;
+      --accent: #b7f36b;
+      --mono: "DM Mono", monospace;
+      --sans: "DM Sans", sans-serif;
+      --display: "Space Grotesk", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 50% -18%, rgba(108, 126, 91, .13), transparent 40%),
+        var(--bg);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button { font: inherit; }
+
+    .shell {
+      width: min(1120px, calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    header {
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-family: var(--display);
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -.5px;
+    }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      color: #10150b;
+      background: var(--accent);
+      border-radius: 9px;
+    }
+
+    .brand-mark svg { width: 18px; height: 18px; }
+
+    .live-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #adb2bc;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(66,214,154,.55);
+    }
+
+    main { padding: 78px 0 48px; }
+
+    .eyebrow {
+      margin: 0 0 15px;
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: var(--display);
+      font-size: clamp(36px, 6vw, 58px);
+      font-weight: 500;
+      line-height: 1.06;
+      letter-spacing: -2.8px;
+    }
+
+    h1 span { color: #777e8d; }
+
+    .intro {
+      margin: 17px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .market-bar {
+      margin: 43px 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .market-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--display);
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .market-title svg { width: 18px; height: 18px; color: var(--accent); }
+
+    .market-meta {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .updated {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .refresh-button {
+      min-height: 40px;
+      padding: 0 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 1px solid #333945;
+      border-radius: 9px;
+      color: var(--text);
+      background: #171b23;
+      cursor: pointer;
+      transition: border-color .2s, background .2s, transform .2s;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .refresh-button:hover:not(:disabled) {
+      border-color: #687151;
+      background: #1d231a;
+    }
+
+    .refresh-button:active:not(:disabled) { transform: scale(.98); }
+    .refresh-button:disabled { opacity: .7; cursor: wait; }
+    .refresh-button svg { width: 15px; height: 15px; }
+    .refresh-button.is-loading svg { animation: spin .8s linear infinite; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .coin-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .coin-card {
+      min-height: 205px;
+      position: relative;
+      overflow: hidden;
+      padding: 23px 24px 21px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(145deg, rgba(22,26,35,.96), rgba(15,18,24,.97));
+      transition: border-color .2s, transform .2s;
+    }
+
+    .coin-card:hover {
+      transform: translateY(-2px);
+      border-color: #343a47;
+    }
+
+    .coin-card::after {
+      content: "";
+      width: 150px;
+      height: 150px;
+      position: absolute;
+      top: -90px;
+      right: -65px;
+      border-radius: 50%;
+      background: var(--coin-glow, rgba(255,255,255,.05));
+      filter: blur(40px);
+      pointer-events: none;
+    }
+
+    .coin-top, .coin-bottom {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .coin-identity { display: flex; align-items: center; gap: 12px; }
+
+    .coin-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      flex: 0 0 auto;
+      place-items: center;
+      border-radius: 12px;
+      color: var(--coin-color);
+      background: var(--coin-bg);
+    }
+
+    .coin-icon svg { width: 24px; height: 24px; }
+
+    .coin-name {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -.2px;
+    }
+
+    .coin-symbol {
+      margin-top: 3px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .rank {
+      padding: 5px 8px;
+      border: 1px solid #292e39;
+      border-radius: 6px;
+      color: #9da3af;
+      font-family: var(--mono);
+      font-size: 10px;
+    }
+
+    .coin-price {
+      margin: 22px 0 17px;
+      font-family: var(--display);
+      font-size: clamp(25px, 3.4vw, 34px);
+      font-weight: 500;
+      letter-spacing: -1.3px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .coin-bottom {
+      padding-top: 14px;
+      border-top: 1px solid rgba(255,255,255,.07);
+    }
+
+    .change-label {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .change-value {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .change-value.positive { color: var(--green); }
+    .change-value.negative { color: var(--red); }
+    .change-value.neutral { color: var(--muted); }
+    .change-value svg { width: 13px; height: 13px; }
+
+    .notice {
+      min-height: 20px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .notice.error { color: var(--red); }
+
+    footer {
+      margin-top: 52px;
+      padding: 19px 0 25px;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      border-top: 1px solid rgba(255,255,255,.07);
+      color: #686e7a;
+      font-size: 11px;
+    }
+
+    footer a { color: #a1a7b3; text-decoration: none; }
+    footer a:hover { color: var(--accent); }
+
+    @media (max-width: 640px) {
+      .shell { width: min(100% - 32px, 520px); }
+      header { height: 66px; }
+      main { padding-top: 56px; }
+      h1 { letter-spacing: -1.8px; }
+      .market-bar { align-items: flex-start; margin-top: 34px; }
+      .market-meta { align-items: flex-end; flex-direction: column-reverse; gap: 8px; }
+      .updated { font-size: 10px; }
+      .refresh-button { min-height: 37px; padding: 0 11px; }
+      .coin-grid { grid-template-columns: 1fr; gap: 11px; }
+      .coin-card { min-height: 190px; padding: 20px; }
+      .coin-price { margin: 19px 0 15px; }
+      footer { flex-direction: column; gap: 8px; margin-top: 38px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+      .refresh-button.is-loading svg { animation-duration: 2s; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 16.5 10 11l3.2 3.2L19 7.5M14.5 7.5H19v4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span>crypto<span style="color:var(--accent)">pulse</span></span>
+      </div>
+      <div class="live-label"><span class="live-dot" aria-hidden="true"></span> Mercato live</div>
+    </header>
+
+    <main>
+      <section aria-labelledby="page-title">
+        <p class="eyebrow">Il mercato, senza rumore</p>
+        <h1 id="page-title">Crypto in <span>tempo reale.</span></h1>
+        <p class="intro">I prezzi delle principali criptovalute, aggiornati in euro.</p>
+      </section>
+
+      <section aria-labelledby="market-heading">
+        <div class="market-bar">
+          <div class="market-title" id="market-heading">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V5m0 14h16M7 15l4-4 3 2 5-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Panoramica mercato
+          </div>
+          <div class="market-meta">
+            <span class="updated" id="updated-at" aria-live="polite">In attesa dei dati…</span>
+            <button class="refresh-button" id="refresh-button" type="button">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 7v5h-5M4.7 9a7.5 7.5 0 0 1 12.6-2L20 12M4 17v-5h5m10.3 3a7.5 7.5 0 0 1-12.6 2L4 12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>Aggiorna prezzi</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="coin-grid" id="coin-grid" aria-live="polite">
+          <article class="coin-card" style="--coin-color:#f7931a;--coin-bg:rgba(247,147,26,.12);--coin-glow:rgba(247,147,26,.15)" data-coin="bitcoin">
+            <div class="coin-top">
+              <div class="coin-identity">
+                <span class="coin-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M16.4 10.1c1.7-1 .9-3.3-1.6-3.8l.5-2.1-1.5-.4-.5 2-1.7-.4.5-2-1.5-.4-.5 2.1-1.7-.4-.5 2.1-1.8-.5-.4 1.6 1.5.4-1.8 7.5-1.5-.4-.4 1.6 1.8.5-.5 2.1 1.5.4.5-2 1.7.4-.5 2 1.5.4.5-2.1c3 .7 5.2.1 5.8-2.2.4-1.5-.3-2.5-1.5-3.2 1.1-.2 1.9-.9 2.1-2.1Zm-5.8-2.2c1.3.3 2.6.7 2.3 1.9-.3 1.1-1.5 1-2.8.7l-1.3-.3.6-2.5 1.2.2Zm-1.5 4 1.4.3c1.5.4 2.8.9 2.5 2.2-.3 1.2-1.8 1.3-3.3.9l-1.3-.3.7-3.1Z" fill="currentColor"/></svg></span>
+                <div><h2 class="coin-name">Bitcoin</h2><div class="coin-symbol">BTC</div></div>
+              </div><span class="rank">#01</span>
+            </div>
+            <p class="coin-price" data-price>—</p>
+            <div class="coin-bottom"><span class="change-label">Variazione 24h</span><span class="change-value neutral" data-change>—</span></div>
+          </article>
+
+          <article class="coin-card" style="--coin-color:#b6a8ff;--coin-bg:rgba(139,122,255,.12);--coin-glow:rgba(139,122,255,.14)" data-coin="ethereum">
+            <div class="coin-top">
+              <div class="coin-identity">
+                <span class="coin-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m12 2.8-6.1 9.5 6.1 3.6 6.1-3.6L12 2.8Zm0 17.9 6.1-7.3-6.1 3.6-6.1-3.6 6.1 7.3Z" fill="currentColor" opacity=".92"/></svg></span>
+                <div><h2 class="coin-name">Ethereum</h2><div class="coin-symbol">ETH</div></div>
+              </div><span class="rank">#02</span>
+            </div>
+            <p class="coin-price" data-price>—</p>
+            <div class="coin-bottom"><span class="change-label">Variazione 24h</span><span class="change-value neutral" data-change>—</span></div>
+          </article>
+
+          <article class="coin-card" style="--coin-color:#8b7bff;--coin-bg:rgba(139,123,255,.12);--coin-glow:rgba(139,123,255,.14)" data-coin="solana">
+            <div class="coin-top">
+              <div class="coin-identity">
+                <span class="coin-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M7.1 6h12.1l-2.3 2.4H4.8L7.1 6Zm0 4.8h12.1L16.9 13H4.8l2.3-2.2Zm9.8 4.8H4.8l2.3 2.4h12.1l-2.3-2.4Z" fill="currentColor"/></svg></span>
+                <div><h2 class="coin-name">Solana</h2><div class="coin-symbol">SOL</div></div>
+              </div><span class="rank">#03</span>
+            </div>
+            <p class="coin-price" data-price>—</p>
+            <div class="coin-bottom"><span class="change-label">Variazione 24h</span><span class="change-value neutral" data-change>—</span></div>
+          </article>
+
+          <article class="coin-card" style="--coin-color:#35d5c1;--coin-bg:rgba(53,213,193,.11);--coin-glow:rgba(53,213,193,.12)" data-coin="cardano">
+            <div class="coin-top">
+              <div class="coin-identity">
+                <span class="coin-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2.1"/><circle cx="12" cy="5.1" r="1.1"/><circle cx="12" cy="18.9" r="1.1"/><circle cx="5.1" cy="12" r="1.1"/><circle cx="18.9" cy="12" r="1.1"/><circle cx="7.1" cy="7.1" r=".8"/><circle cx="16.9" cy="7.1" r=".8"/><circle cx="7.1" cy="16.9" r=".8"/><circle cx="16.9" cy="16.9" r=".8"/><circle cx="3.1" cy="7" r=".55"/><circle cx="20.9" cy="7" r=".55"/><circle cx="3.1" cy="17" r=".55"/><circle cx="20.9" cy="17" r=".55"/></svg></span>
+                <div><h2 class="coin-name">Cardano</h2><div class="coin-symbol">ADA</div></div>
+              </div><span class="rank">#04</span>
+            </div>
+            <p class="coin-price" data-price>—</p>
+            <div class="coin-bottom"><span class="change-label">Variazione 24h</span><span class="change-value neutral" data-change>—</span></div>
+          </article>
+        </div>
+        <p class="notice" id="notice" role="status"></p>
+      </section>
+    </main>
+
+    <footer>
+      <span>Dati di mercato forniti da <a href="https://www.coingecko.com/" target="_blank" rel="noreferrer">CoinGecko</a></span>
+      <span>Aggiornamento automatico ogni 60 secondi · Valuta EUR</span>
+    </footer>
+  </div>
+
+  <script>
+    const API_URL = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin%2Cethereum%2Csolana%2Ccardano&vs_currencies=eur&include_24hr_change=true";
+    const refreshButton = document.querySelector("#refresh-button");
+    const updatedAt = document.querySelector("#updated-at");
+    const notice = document.querySelector("#notice");
+    const priceFormatter = new Intl.NumberFormat("it-IT", {
+      style: "currency",
+      currency: "EUR",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 8
+    });
+    const percentFormatter = new Intl.NumberFormat("it-IT", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    function renderPrice(card, price) {
+      card.querySelector("[data-price]").textContent = priceFormatter.format(price);
+    }
+
+    function renderChange(card, change) {
+      const element = card.querySelector("[data-change]");
+      const direction = change > 0 ? "positive" : change < 0 ? "negative" : "neutral";
+      const arrow = change > 0
+        ? '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3 10 5-5 5 5M8 5v8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        : change < 0
+          ? '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m3 6 5 5 5-5m-5 5V3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+          : "";
+      element.className = `change-value ${direction}`;
+      element.innerHTML = `${arrow}${percentFormatter.format(change)}%`;
+      element.setAttribute("aria-label", `${change > 0 ? "Aumento" : change < 0 ? "Calo" : "Nessuna variazione"} del ${percentFormatter.format(Math.abs(change))}% nelle ultime 24 ore`);
+    }
+
+    async function refreshPrices() {
+      refreshButton.disabled = true;
+      refreshButton.classList.add("is-loading");
+      refreshButton.setAttribute("aria-busy", "true");
+      notice.textContent = "";
+      notice.classList.remove("error");
+
+      try {
+        const response = await fetch(API_URL, { headers: { accept: "application/json" } });
+        if (!response.ok) {
+          throw new Error(`CoinGecko ha risposto con il codice ${response.status}.`);
+        }
+
+        const data = await response.json();
+        const cards = [...document.querySelectorAll("[data-coin]")];
+        for (const card of cards) {
+          const coin = data[card.dataset.coin];
+          if (!coin || typeof coin.eur !== "number" || typeof coin.eur_24h_change !== "number") {
+            throw new Error("La risposta ricevuta non contiene tutti i prezzi richiesti.");
+          }
+        }
+
+        for (const card of cards) {
+          const coin = data[card.dataset.coin];
+          renderPrice(card, coin.eur);
+          renderChange(card, coin.eur_24h_change);
+        }
+
+        updatedAt.textContent = `Ultimo aggiornamento: ${new Intl.DateTimeFormat("it-IT", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit"
+        }).format(new Date())}`;
+      } catch (error) {
+        notice.textContent = error instanceof Error
+          ? `${error.message} Riprova tra poco.`
+          : "Impossibile aggiornare i prezzi. Riprova tra poco.";
+        notice.classList.add("error");
+      } finally {
+        refreshButton.disabled = false;
+        refreshButton.classList.remove("is-loading");
+        refreshButton.removeAttribute("aria-busy");
+      }
+    }
+
+    refreshButton.addEventListener("click", refreshPrices);
+    refreshPrices();
+    window.setInterval(refreshPrices, 60_000);
+  </script>
+</body>
+</html>
